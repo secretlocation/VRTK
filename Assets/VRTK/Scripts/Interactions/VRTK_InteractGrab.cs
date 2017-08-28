@@ -2,7 +2,6 @@
 namespace VRTK
 {
     using UnityEngine;
-    using System.Collections;
 
     /// <summary>
     /// The Interact Grab script is attached to a Controller object and requires the `VRTK_ControllerEvents` script to be attached as it uses this for listening to the controller button events for grabbing and releasing interactable game objects.
@@ -34,6 +33,9 @@ namespace VRTK
 
         [Tooltip("The button used to grab/release a touched object.")]
         public VRTK_ControllerEvents.ButtonAlias grabButton = VRTK_ControllerEvents.ButtonAlias.GripPress;
+
+        public VRTK_BaseInputAction inputAction;
+
         [Tooltip("An amount of time between when the grab button is pressed to when the controller is touching something to grab it. For example, if an object is falling at a fast rate, then it is very hard to press the grab button in time to catch the object due to human reaction times. A higher number here will mean the grab button can be pressed before the controller touches the object and when the collision takes place, if the grab button is still being held down then the grab action will be successful.")]
         public float grabPrecognition = 0f;
         [Tooltip("An amount to multiply the velocity of any objects being thrown. This can be useful when scaling up the play area to simulate being able to throw items further.")]
@@ -278,18 +280,34 @@ namespace VRTK
 
         protected virtual void ManageGrabListener(bool state)
         {
-            if (controllerEvents != null && subscribedGrabButton != VRTK_ControllerEvents.ButtonAlias.Undefined && (!state || grabButton != subscribedGrabButton))
+            if (inputAction == null)
             {
-                controllerEvents.UnsubscribeToButtonAliasEvent(subscribedGrabButton, true, DoGrabObject);
-                controllerEvents.UnsubscribeToButtonAliasEvent(subscribedGrabButton, false, DoReleaseObject);
-                subscribedGrabButton = VRTK_ControllerEvents.ButtonAlias.Undefined;
-            }
+                if (controllerEvents != null && subscribedGrabButton != VRTK_ControllerEvents.ButtonAlias.Undefined && (!state || grabButton != subscribedGrabButton))
+                {
+                    controllerEvents.UnsubscribeToButtonAliasEvent(subscribedGrabButton, true, DoGrabObjectByButton);
+                    controllerEvents.UnsubscribeToButtonAliasEvent(subscribedGrabButton, false, DoReleaseObjectByButton);
+                    subscribedGrabButton = VRTK_ControllerEvents.ButtonAlias.Undefined;
+                }
 
-            if (controllerEvents != null && state && grabButton != VRTK_ControllerEvents.ButtonAlias.Undefined && grabButton != subscribedGrabButton)
+                if (controllerEvents != null && state && grabButton != VRTK_ControllerEvents.ButtonAlias.Undefined && grabButton != subscribedGrabButton)
+                {
+                    controllerEvents.SubscribeToButtonAliasEvent(grabButton, true, DoGrabObjectByButton);
+                    controllerEvents.SubscribeToButtonAliasEvent(grabButton, false, DoReleaseObjectByButton);
+                    subscribedGrabButton = grabButton;
+                }
+            }
+            else
             {
-                controllerEvents.SubscribeToButtonAliasEvent(grabButton, true, DoGrabObject);
-                controllerEvents.SubscribeToButtonAliasEvent(grabButton, false, DoReleaseObject);
-                subscribedGrabButton = grabButton;
+                if (state)
+                {
+                    inputAction.ActionStarted += DoGrabObjectByAction;
+                    inputAction.ActionEnded += DoReleaseObjectByAction;
+                }
+                else
+                {
+                    inputAction.ActionStarted -= DoGrabObjectByAction;
+                    inputAction.ActionEnded -= DoReleaseObjectByAction;
+                }
             }
         }
 
@@ -572,13 +590,33 @@ namespace VRTK
             }
         }
 
-        protected virtual void DoGrabObject(object sender, ControllerInteractionEventArgs e)
+        protected virtual void DoGrabObjectByButton(object sender, ControllerInteractionEventArgs e)
+        {
+            DoGrabObject();
+        }
+
+        protected virtual void DoReleaseObjectByButton(object sender, ControllerInteractionEventArgs e)
+        {
+            DoReleaseObject();
+        }
+
+        protected virtual void DoGrabObjectByAction(object sender)
+        {
+            DoGrabObject();
+        }
+
+        protected virtual void DoReleaseObjectByAction(object sender)
+        {
+            DoReleaseObject();
+        }
+
+        protected virtual void DoGrabObject()
         {
             OnGrabButtonPressed(controllerEvents.SetControllerEvent(ref grabPressed, true));
             AttemptGrabObject();
         }
 
-        protected virtual void DoReleaseObject(object sender, ControllerInteractionEventArgs e)
+        protected virtual void DoReleaseObject()
         {
             AttemptReleaseObject();
             OnGrabButtonReleased(controllerEvents.SetControllerEvent(ref grabPressed, false));
