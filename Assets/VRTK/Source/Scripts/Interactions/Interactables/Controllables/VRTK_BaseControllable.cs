@@ -86,6 +86,7 @@ namespace VRTK.Controllables
         protected Vector3 originalLocalPosition;
         protected Quaternion originalRotation;
         protected Quaternion originalLocalRotation;
+        protected Vector3 actualTransformPosition;
         protected bool atMinLimit;
         protected bool atMaxLimit;
         protected Collider interactingCollider;
@@ -186,6 +187,7 @@ namespace VRTK.Controllables
         protected virtual void OnDrawGizmosSelected()
         {
             Gizmos.color = Color.yellow;
+            actualTransformPosition = (Application.isPlaying ? originalPosition : transform.position);
         }
 
         protected virtual void OnCollisionEnter(Collision collision)
