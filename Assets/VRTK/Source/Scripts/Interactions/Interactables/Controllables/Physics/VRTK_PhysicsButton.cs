@@ -86,7 +86,7 @@ namespace VRTK.Controllables.PhysicsBased
 
         protected virtual void Update()
         {
-            if (transform.localPosition != previousLocalPosition)
+            if (!VRTK_SharedMethods.Vector3ShallowCompare(transform.localPosition, previousLocalPosition, equalityFidelity))
             {
                 OnValueChanged(EventPayload());
                 CheckPressEvents();
