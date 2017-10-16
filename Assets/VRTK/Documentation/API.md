@@ -5096,6 +5096,17 @@ The ProcessUpdate method is run in every Update method on the Interactable Objec
 
 The ProcessFixedUpdate method is run in every FixedUpdate method on the Interactable Object.
 
+#### ResetState/0
+
+  > `public virtual void ResetState()`
+
+ * Parameters
+   * _none_
+ * Returns
+   * _none_
+
+The ResetState method re-initializes the grab attach.
+
 ---
 
 ## Base Joint Grab Attach (VRTK_BaseJointGrabAttach)
@@ -5684,6 +5695,18 @@ The GetCurrentDirection method returns a Vector3 of the current positive/negativ
 
 The GetDirectionFromOrigin method returns a Vector3 of the direction across the axis from the original position.
 
+#### SetCurrentPosition/2
+
+  > `public virtual void SetCurrentPosition(Vector3 newPosition, float speed)`
+
+ * Parameters
+   * `Vector3 newPosition` - The position to move the Interactable Object to.
+   * `float speed` - The speed in which to move the Interactable Object.
+ * Returns
+   * _none_
+
+The SetCurrentPosition method sets the position of the Interactable Object to the given new position at the appropriate speed.
+
 #### ResetPosition/0
 
   > `public virtual void ResetPosition()`
@@ -5693,7 +5716,7 @@ The GetDirectionFromOrigin method returns a Vector3 of the direction across the 
  * Returns
    * _none_
 
-The ResetPosition method will move the transform back to the origin position.
+The ResetPosition method will move the Interactable Object back to the origin position.
 
 #### GetWorldLimits/0
 
