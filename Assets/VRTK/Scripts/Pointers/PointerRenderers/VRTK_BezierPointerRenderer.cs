@@ -2,6 +2,7 @@
 namespace VRTK
 {
     using UnityEngine;
+	using UnityLib;
 
     /// <summary>
     /// The Bezier Pointer Renderer emits a curved line (made out of game objects) from the end of the attached object to a point on a ground surface (at any height).
@@ -84,7 +85,14 @@ namespace VRTK
             return new GameObject[] { actualContainer, actualCursor };
         }
 
-        protected override void ToggleRenderer(bool pointerState, bool actualState)
+		//public override void InitalizePointer(VRTK_Pointer givenPointer, VRTK_PolicyList givenInvalidListPolicy, float givenNavMeshCheckDistance, bool givenHeadsetPositionCompensation)
+		//{
+		//	base.InitalizePointer(givenPointer, givenInvalidListPolicy, givenNavMeshCheckDistance, givenHeadsetPositionCompensation);
+		//	playArea = VRTK_DeviceFinder.PlayAreaTransform();
+		//	Debug.Log(playArea);
+		//}
+
+		protected override void ToggleRenderer(bool pointerState, bool actualState)
         {
             TogglePointerCursor(pointerState, actualState);
             TogglePointerTracer(pointerState, actualState);
@@ -98,7 +106,8 @@ namespace VRTK
         protected override void CreatePointerObjects()
         {
             actualContainer = new GameObject(VRTK_SharedMethods.GenerateVRTKObjectName(true, gameObject.name, "BezierPointerRenderer_Container"));
-            VRTK_PlayerObject.SetPlayerObject(actualContainer, VRTK_PlayerObject.ObjectTypes.Pointer);
+			actualContainer.transform.SetSibling(VRTK_SDKManager.instance.transform);
+			VRTK_PlayerObject.SetPlayerObject(actualContainer, VRTK_PlayerObject.ObjectTypes.Pointer);
             actualContainer.SetActive(false);
 
             CreateTracer();
@@ -146,8 +155,8 @@ namespace VRTK
         protected virtual void CreateTracer()
         {
             actualTracer = actualContainer.gameObject.AddComponent<VRTK_CurveGenerator>();
-            actualTracer.transform.SetParent(null);
-            actualTracer.Create(tracerDensity, cursorRadius, customTracer, rescaleTracer);
+			actualTracer.transform.SetSibling(VRTK_SDKManager.instance.transform);
+			actualTracer.Create(tracerDensity, cursorRadius, customTracer, rescaleTracer);
         }
 
         protected virtual GameObject CreateCursorObject()
@@ -188,7 +197,8 @@ namespace VRTK
         protected virtual void CreateCursor()
         {
             actualCursor = (customCursor ? Instantiate(customCursor) : CreateCursorObject());
-            CreateCursorLocations();
+			actualCursor.transform.SetSibling(VRTK_SDKManager.instance.transform);
+			CreateCursorLocations();
             actualCursor.name = VRTK_SharedMethods.GenerateVRTKObjectName(true, gameObject.name, "BezierPointerRenderer_Cursor");
             VRTK_PlayerObject.SetPlayerObject(actualCursor, VRTK_PlayerObject.ObjectTypes.Pointer);
             actualCursor.layer = LayerMask.NameToLayer("Ignore Raycast");
@@ -198,12 +208,15 @@ namespace VRTK
         protected virtual Vector3 ProjectForwardBeam()
         {
             Transform origin = GetOrigin();
-            float attachedRotation = Vector3.Dot(Vector3.up, origin.forward.normalized);
+            float attachedRotation = Vector3.Dot(VRTK_Orientation.Up, origin.forward.normalized);
             float calculatedLength = maximumLength.x;
             Vector3 useForward = origin.forward;
             if ((attachedRotation * 100f) > heightLimitAngle)
             {
-                useForward = new Vector3(useForward.x, fixedForwardBeamForward.y, useForward.z);
+				Vector3 useForwardProjected = Vector3.ProjectOnPlane(useForward, VRTK_Orientation.Up);
+				float fixedForwardBeamForwardHeight = Vector3.Project(fixedForwardBeamForward, VRTK_Orientation.Up).magnitude;
+
+				useForward = useForwardProjected + (VRTK_Orientation.Up * fixedForwardBeamForwardHeight);
                 float controllerRotationOffset = 1f - (attachedRotation - (heightLimitAngle / 100f));
                 calculatedLength = (maximumLength.x * controllerRotationOffset) * controllerRotationOffset;
             }
@@ -240,13 +253,13 @@ namespace VRTK
             }
 
             //Use BEAM_ADJUST_OFFSET to move point back and up a bit to prevent beam clipping at collision point
-            return (pointerRaycast.GetPoint(actualLength - BEAM_ADJUST_OFFSET) + (Vector3.up * BEAM_ADJUST_OFFSET));
+            return (pointerRaycast.GetPoint(actualLength - BEAM_ADJUST_OFFSET) + (VRTK_Orientation.Up * BEAM_ADJUST_OFFSET));
         }
 
         protected virtual Vector3 ProjectDownBeam(Vector3 jointPosition)
         {
             Vector3 downPosition = Vector3.zero;
-            Ray projectedBeamDownRaycast = new Ray(jointPosition, Vector3.down);
+            Ray projectedBeamDownRaycast = new Ray(jointPosition, VRTK_Orientation.Down);
             RaycastHit collidedWith;
 
 #pragma warning disable 0618
@@ -283,8 +296,8 @@ namespace VRTK
                 Vector3[] beamPoints = new Vector3[]
                 {
                     GetOrigin().position,
-                    jointPosition + new Vector3(0f, curveOffset, 0f),
-                    downPosition,
+                    jointPosition + (VRTK_Orientation.Rotation * new Vector3(0f, curveOffset, 0f)),
+					downPosition,
                     downPosition,
                 };
 
@@ -306,7 +319,7 @@ namespace VRTK
 #pragma warning restore 0618
                     {
                         Vector3 collisionPoint = checkCollisionRay.GetPoint(checkCollisionHit.distance);
-                        Ray downwardCheckRay = new Ray(collisionPoint + (Vector3.up * 0.01f), Vector3.down);
+                        Ray downwardCheckRay = new Ray(collisionPoint + (VRTK_Orientation.Up * 0.01f), VRTK_Orientation.Down);
                         RaycastHit downwardCheckHit;
 
 #pragma warning disable 0618
@@ -314,8 +327,16 @@ namespace VRTK
 #pragma warning restore 0618
                         {
                             destinationHit = downwardCheckHit;
-                            newDownPosition = downwardCheckRay.GetPoint(downwardCheckHit.distance); ;
-                            newJointPosition = (newDownPosition.y < jointPosition.y ? new Vector3(newDownPosition.x, jointPosition.y, newDownPosition.z) : jointPosition);
+                            newDownPosition = downwardCheckRay.GetPoint(downwardCheckHit.distance);
+
+							float jointPositionHeight = Vector3.Project(jointPosition, VRTK_Orientation.Up).magnitude;
+							float newDownPositionHeight = Vector3.Project(newDownPosition, VRTK_Orientation.Up).magnitude;
+							Vector3 newDownPositionProjected = Vector3.ProjectOnPlane(newDownPosition, VRTK_Orientation.Up);
+
+							newJointPosition = (newDownPositionHeight < jointPositionHeight)
+								? newDownPositionProjected + (VRTK_Orientation.Up * jointPositionHeight)
+								: jointPosition;
+
                             break;
                         }
                     }
@@ -332,10 +353,10 @@ namespace VRTK
             {
                 Vector3[] beamPoints = new Vector3[]
                 {
-                GetOrigin(false).position,
-                jointPosition + new Vector3(0f, curveOffset, 0f),
-                downPosition,
-                downPosition,
+					GetOrigin(false).position,
+					jointPosition + (VRTK_Orientation.Rotation * new Vector3(0f, curveOffset, 0f)),
+					downPosition,
+					downPosition,
                 };
                 Material tracerMaterial = (customTracer ? null : defaultMaterial);
                 actualTracer.SetPoints(beamPoints, tracerMaterial, currentColor);
@@ -369,12 +390,13 @@ namespace VRTK
             if (controllingPointer && destinationHit.transform)
             {
                 TogglePointerCursor(controllingPointer.IsPointerActive(), controllingPointer.IsPointerActive());
+
                 actualCursor.transform.position = destinationHit.point;
-                if (cursorMatchTargetRotation)
-                {
-                    actualCursor.transform.rotation = Quaternion.FromToRotation(Vector3.up, destinationHit.normal);
-                }
-                base.UpdateDependencies(actualCursor.transform.position);
+				actualCursor.transform.rotation = (cursorMatchTargetRotation)
+					? VRTK_Orientation.Rotation
+					: Quaternion.LookRotation(VRTK_Orientation.Right, destinationHit.normal);
+
+				base.UpdateDependencies(actualCursor.transform.position);
 
                 ChangeColor(validCollisionColor);
                 if (actualValidLocationObject)

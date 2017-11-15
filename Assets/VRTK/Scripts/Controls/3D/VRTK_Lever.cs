@@ -113,10 +113,11 @@ namespace VRTK
             if (leverRigidbody == null)
             {
                 leverRigidbody = gameObject.AddComponent<Rigidbody>();
-                leverRigidbody.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
-                leverRigidbody.angularDrag = releasedFriction; // otherwise lever will continue to move too far on its own
+                
             }
-            leverRigidbody.isKinematic = false;
+			leverRigidbody.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+			leverRigidbody.angularDrag = releasedFriction; // otherwise lever will continue to move too far on its own
+			leverRigidbody.isKinematic = false;
             leverRigidbody.useGravity = false;
         }
 

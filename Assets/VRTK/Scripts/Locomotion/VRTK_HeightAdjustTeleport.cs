@@ -5,7 +5,7 @@ namespace VRTK
     using System;
 
     /// <summary>
-    /// The height adjust teleporter extends the basic teleporter and allows for the y position of the user's position to be altered based on whether the teleport location is on top of another object.
+    /// The height adjust teleporter extends the basic teleporter and allows for the up position of the user's position to be altered based on whether the teleport location is on top of another object.
     /// </summary>
     /// <example>
     /// `VRTK/Examples/007_CameraRig_HeightAdjustTeleport` has a collection of varying height objects that the user can either walk up and down or use the laser pointer to climb on top of them.
@@ -30,44 +30,41 @@ namespace VRTK
         protected override void OnEnable()
         {
             base.OnEnable();
-            adjustYForTerrain = true;
-        }
-
-        protected override void OnDisable()
-        {
-            base.OnDisable();
+            adjustUpForTerrain = true;
         }
 
         protected override Vector3 GetNewPosition(Vector3 tipPosition, Transform target, bool returnOriginalPosition)
         {
             Vector3 basePosition = base.GetNewPosition(tipPosition, target, returnOriginalPosition);
-            if (!returnOriginalPosition)
+            if (!returnOriginalPosition && playArea != null)
             {
-                basePosition.y = GetTeleportY(target, tipPosition);
+                float teleportHeight = GetTeleportHeight(target, tipPosition);
+                basePosition = Vector3.ProjectOnPlane(basePosition, VRTK_Orientation.Up) + (VRTK_Orientation.Up * teleportHeight);
             }
             return basePosition;
         }
 
-        protected virtual float GetTeleportY(Transform target, Vector3 tipPosition)
+		protected virtual float GetTeleportHeight(Transform target, Vector3 tipPosition)
         {
-            if (!snapToNearestFloor || !ValidRigObjects())
-            {
-                return tipPosition.y;
-            }
+            if (playArea == null) { return tipPosition.y; }
 
-            float newY = playArea.position.y;
+            float tipHeight = Vector3.Dot(tipPosition, VRTK_Orientation.Up);
+            if (!snapToNearestFloor || !ValidRigObjects()) { return tipHeight; }
+
+            float newHeight = Vector3.Dot(playArea.position, VRTK_Orientation.Up);
             float heightOffset = 0.1f;
+
             //Check to see if the tip is on top of an object
-            Vector3 rayStartPositionOffset = Vector3.up * heightOffset;
-            Ray ray = new Ray(tipPosition + rayStartPositionOffset, -playArea.up);
+            Vector3 rayStartPositionOffset = VRTK_Orientation.Up * heightOffset;
+            Ray ray = new Ray(tipPosition + rayStartPositionOffset, VRTK_Orientation.Down);
             RaycastHit rayCollidedWith;
 #pragma warning disable 0618
             if (target != null && VRTK_CustomRaycast.Raycast(customRaycast, ray, out rayCollidedWith, layersToIgnore, Mathf.Infinity, QueryTriggerInteraction.Ignore))
 #pragma warning restore 0618
             {
-                newY = (tipPosition.y - rayCollidedWith.distance) + heightOffset;
+                newHeight = (tipHeight - rayCollidedWith.distance) + heightOffset;
             }
-            return newY;
+            return newHeight;
         }
     }
 }

@@ -91,14 +91,13 @@ namespace VRTK
         {
             if (directionDevice && directionDevice.gameObject.activeInHierarchy && controlledGameObject.activeInHierarchy)
             {
-                float storeYPosition = controlledGameObject.transform.position.y;
-                Vector3 updatedPosition = axisDirection * currentSpeed * Time.deltaTime;
-                Vector3 finalPosition = controlledGameObject.transform.position + updatedPosition;
-                finalPosition = new Vector3(finalPosition.x, storeYPosition, finalPosition.z);
+				Vector3 deltaPosition = axisDirection * currentSpeed * Time.deltaTime;
+				deltaPosition = Vector3.ProjectOnPlane(deltaPosition, VRTK_Orientation.Up);
 
-                if (CanMove(bodyPhysics, controlledGameObject.transform.position, finalPosition))
+				Vector3 targetPosition = controlledGameObject.transform.position + deltaPosition;
+                if (CanMove(bodyPhysics, controlledGameObject.transform.position, targetPosition))
                 {
-                    controlledGameObject.transform.position = finalPosition;
+                    controlledGameObject.transform.position = targetPosition;
                 }
             }
         }

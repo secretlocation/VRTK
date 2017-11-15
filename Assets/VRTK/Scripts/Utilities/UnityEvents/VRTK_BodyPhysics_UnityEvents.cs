@@ -25,6 +25,8 @@
         public BodyPhysicsEvent OnStartTouchingGround = new BodyPhysicsEvent();
         public BodyPhysicsEvent OnStopTouchingGround = new BodyPhysicsEvent();
 
+        public BodyPhysicsEvent OnOrientationChanged = new BodyPhysicsEvent();
+
         protected override void AddListeners(VRTK_BodyPhysics component)
         {
             component.StartFalling += StartFalling;
@@ -41,6 +43,8 @@
 
             component.StartTouchingGround += StartTouchingGround;
             component.StopTouchingGround += StopTouchingGround;
+
+            component.OrientationChanged += OrientationChanged;
         }
 
         protected override void RemoveListeners(VRTK_BodyPhysics component)
@@ -59,6 +63,8 @@
 
             component.StartTouchingGround -= StartTouchingGround;
             component.StopTouchingGround -= StopTouchingGround;
+
+            component.OrientationChanged -= OrientationChanged;
         }
 
         private void StartFalling(object o, BodyPhysicsEventArgs e)
@@ -109,6 +115,11 @@
         private void StopTouchingGround(object o, BodyPhysicsEventArgs e)
         {
             OnStopTouchingGround.Invoke(o, e);
+        }
+
+        private void OrientationChanged(object o, BodyPhysicsEventArgs e)
+        {
+            OnOrientationChanged.Invoke(o, e);
         }
     }
 }

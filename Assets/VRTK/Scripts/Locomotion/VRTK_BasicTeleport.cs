@@ -53,7 +53,7 @@ namespace VRTK
 
         protected Transform headset;
         protected Transform playArea;
-        protected bool adjustYForTerrain = false;
+        protected bool adjustUpForTerrain = false;
         protected bool enableTeleport = true;
 
         protected float blinkPause = 0f;
@@ -164,6 +164,7 @@ namespace VRTK
             StartTeleport(this, teleportArgs);
             Quaternion updatedRotation = SetNewRotation(destinationRotation);
             Vector3 finalDestination = GetCompensatedPosition(destinationPosition, destinationPosition);
+            finalDestination = destinationPosition;
             CalculateBlinkDelay(blinkTransitionSpeed, finalDestination);
             Blink(blinkTransitionSpeed);
             if (ValidRigObjects())
@@ -185,7 +186,7 @@ namespace VRTK
             headset = VRTK_SharedMethods.AddCameraFade();
             playArea = VRTK_DeviceFinder.PlayAreaTransform();
 
-            adjustYForTerrain = false;
+            adjustUpForTerrain = false;
             enableTeleport = true;
             initaliseListeners = StartCoroutine(InitListenersAtEndOfFrame());
             VRTK_ObjectCache.registeredTeleporters.Add(this);
@@ -219,7 +220,10 @@ namespace VRTK
         protected virtual DestinationMarkerEventArgs BuildTeleportArgs(Transform target, Vector3 destinationPosition, Quaternion? destinationRotation = null, bool forceDestinationPosition = false)
         {
             DestinationMarkerEventArgs teleportArgs = new DestinationMarkerEventArgs();
-            teleportArgs.distance = (ValidRigObjects() ? Vector3.Distance(new Vector3(headset.position.x, playArea.position.y, headset.position.z), destinationPosition) : 0f);
+
+			float playAreaHeight = Vector3.Dot(playArea.position, VRTK_Orientation.Up);
+			Vector3 projectedHeadsetPosition = Vector3.ProjectOnPlane(headset.position, VRTK_Orientation.Up);
+			teleportArgs.distance = (ValidRigObjects() ? Vector3.Distance(projectedHeadsetPosition + (VRTK_Orientation.Up * playAreaHeight), destinationPosition) : 0f);
             teleportArgs.target = target;
             teleportArgs.raycastHit = new RaycastHit();
             teleportArgs.destinationPosition = destinationPosition;
@@ -256,7 +260,7 @@ namespace VRTK
                 Vector3 updatedPosition = SetNewPosition(newPosition, e.target, e.forceDestinationPosition);
                 ProcessOrientation(sender, e, updatedPosition, updatedRotation);
                 EndTeleport(sender, e);
-            }
+			}
         }
 
         protected virtual void StartTeleport(object sender, DestinationMarkerEventArgs e)
@@ -308,29 +312,46 @@ namespace VRTK
 
         protected virtual Vector3 GetCompensatedPosition(Vector3 givenPosition, Vector3 defaultPosition)
         {
-            float newX = 0f;
-            float newY = 0f;
-            float newZ = 0f;
+			Vector3 newPosition = Vector3.zero;
 
-            if (ValidRigObjects())
+            if (ValidRigObjects() && playArea != null)
             {
-                newX = (headsetPositionCompensation ? (givenPosition.x - (headset.position.x - playArea.position.x)) : givenPosition.x);
-                newY = defaultPosition.y;
-                newZ = (headsetPositionCompensation ? (givenPosition.z - (headset.position.z - playArea.position.z)) : givenPosition.z);
-            }
+				var givenPositionProjected = Vector3.ProjectOnPlane(givenPosition, VRTK_Orientation.Up);
+				var headsetPositionProjected = Vector3.ProjectOnPlane(headset.position, VRTK_Orientation.Up);
+				var playAreaPositionProjected = Vector3.ProjectOnPlane(playArea.position, VRTK_Orientation.Up);
 
-            return new Vector3(newX, newY, newZ);
+				newPosition = (headsetPositionCompensation)
+					? givenPositionProjected - (headsetPositionProjected - playAreaPositionProjected)
+					: givenPositionProjected;
+
+				newPosition += VRTK_Orientation.Up * Vector3.Dot(defaultPosition, VRTK_Orientation.Up);
+			}
+
+			return newPosition;
         }
 
         protected virtual Vector3 CheckTerrainCollision(Vector3 position, Transform target, bool useHeadsetForPosition)
         {
             Terrain targetTerrain = target.GetComponent<Terrain>();
-            if (adjustYForTerrain && targetTerrain != null)
+            if (adjustUpForTerrain && targetTerrain != null)
             {
-                Vector3 checkPosition = (useHeadsetForPosition && ValidRigObjects() ? new Vector3(headset.position.x, position.y, headset.position.z) : position);
+				Vector3 headsetPositionProjected = Vector3.ProjectOnPlane(headset.position, VRTK_Orientation.Up);
+				Vector3 positionProjected = Vector3.ProjectOnPlane(position, VRTK_Orientation.Up);
+				float positionHeight = Vector3.Dot(position, VRTK_Orientation.Up);
+
+                Vector3 checkPosition = (useHeadsetForPosition && ValidRigObjects())
+					? headsetPositionProjected + (VRTK_Orientation.Up * positionHeight)
+					: position;
+
                 float terrainHeight = targetTerrain.SampleHeight(checkPosition);
-                position.y = (terrainHeight > position.y ? position.y : targetTerrain.GetPosition().y + terrainHeight);
-            }
+				if (terrainHeight <= positionHeight)
+				{
+					float baseHeight = Vector3.Dot(targetTerrain.GetPosition(), VRTK_Orientation.Up);
+					positionHeight = baseHeight + terrainHeight;
+				}
+
+				position = positionProjected + (VRTK_Orientation.Up * positionHeight);
+			}
             return position;
         }
 
@@ -370,8 +391,8 @@ namespace VRTK
 
         protected virtual IEnumerator InitListenersAtEndOfFrame()
         {
-            yield return new WaitForEndOfFrame();
-            if (enabled)
+			yield return new WaitForEndOfFrame();
+			if (enabled)
             {
                 InitDestinationMarkerListeners(true);
             }

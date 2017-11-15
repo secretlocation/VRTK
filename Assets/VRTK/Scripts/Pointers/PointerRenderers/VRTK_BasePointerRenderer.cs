@@ -2,6 +2,7 @@
 namespace VRTK
 {
     using UnityEngine;
+	using UnityLib;
     using System;
     using System.Collections.Generic;
 #if UNITY_5_5_OR_NEWER
@@ -252,13 +253,18 @@ namespace VRTK
         protected abstract void DestroyPointerObjects();
         protected abstract void ToggleRenderer(bool pointerState, bool actualState);
 
+		protected virtual void Awake()
+		{
+			VRTK_SDKManager.instance.AddBehaviourToToggleOnLoadedSetupChange(this);
+		}
+
         protected virtual void OnEnable()
         {
             defaultMaterial = Resources.Load("WorldPointer") as Material;
             makeRendererVisible = new List<GameObject>();
             CreatePointerOriginTransformFollow();
             CreatePointerObjects();
-        }
+		}
 
         protected virtual void OnDisable()
         {
@@ -286,6 +292,11 @@ namespace VRTK
 
             UpdatePointerOriginTransformFollow();
         }
+
+		protected virtual void OnDestroy()
+		{
+			VRTK_SDKManager.instance.RemoveBehaviourToToggleOnLoadedSetupChange(this);
+		}
 
         protected virtual void ToggleObjectInteraction(bool state)
         {
@@ -556,7 +567,8 @@ namespace VRTK
         protected virtual void CreatePointerOriginTransformFollow()
         {
             pointerOriginTransformFollowGameObject = new GameObject(VRTK_SharedMethods.GenerateVRTKObjectName(true, gameObject.name, "BasePointerRenderer_Origin_Smoothed"));
-            pointerOriginTransformFollow = pointerOriginTransformFollowGameObject.AddComponent<VRTK_TransformFollow>();
+			pointerOriginTransformFollowGameObject.transform.SetSibling(VRTK_SDKManager.instance.transform);
+			pointerOriginTransformFollow = pointerOriginTransformFollowGameObject.AddComponent<VRTK_TransformFollow>();
             pointerOriginTransformFollow.enabled = false;
             pointerOriginTransformFollow.followsScale = false;
         }

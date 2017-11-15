@@ -949,7 +949,7 @@ namespace VRTK
         }
 
         /// <summary>
-        /// The GetTouchpadAxis method returns the coordinates of where the touchpad is being touched and can be used for directional input via the touchpad. The `x` value is the horizontal touch plane and the `y` value is the vertical touch plane.
+        /// The GetTouchpadAxis method returns the coordinates of where the touchpad is being touched and can be used for directional input via the touchpad. The `x` value is the horizontal touch plane and the `up` value is the vertical touch plane.
         /// </summary>
         /// <returns>A 2 dimensional vector containing the x and y position of where the touchpad is being touched. `(0,0)` to `(1,1)`.</returns>
         public virtual Vector2 GetTouchpadAxis()

@@ -305,17 +305,17 @@ namespace VRTK
             return a - b * Mathf.Floor(a / b);
         }
 
-        /// <summary>
-        /// Finds the first <see cref="GameObject"/> with a given name and an ancestor that has a specific component.
-        /// </summary>
-        /// <remarks>
-        /// This method returns active as well as inactive <see cref="GameObject"/>s in the scene. It doesn't return assets.
-        /// For performance reasons it is recommended to not use this function every frame. Cache the result in a member variable at startup instead.
-        /// </remarks>
-        /// <typeparam name="T">The component type that needs to be on an ancestor of the wanted <see cref="GameObject"/>. Must be a subclass of <see cref="Component"/>.</typeparam>
-        /// <param name="gameObjectName">The name of the wanted <see cref="GameObject"/>. If it contains a '/' character, this method traverses the hierarchy like a path name, beginning on the game object that has a component of type <typeparamref name="T"/>.</param>
-        /// <returns>The <see cref="GameObject"/> with name <paramref name="gameObjectName"/> and an ancestor that has a <typeparamref name="T"/>. If no such <see cref="GameObject"/> is found <see langword="null"/> is returned.</returns>
-        public static GameObject FindEvenInactiveGameObject<T>(string gameObjectName = null) where T : Component
+		/// <summary>
+		/// Finds the first <see cref="GameObject"/> with a given name and an ancestor that has a specific component.
+		/// </summary>
+		/// <remarks>
+		/// This method returns active as well as inactive <see cref="GameObject"/>s in the hierarchy. It doesn't return assets.
+		/// For performance reasons it is recommended to not use this function every frame. Cache the result in a member variable at startup instead.
+		/// </remarks>
+		/// <typeparam name="T">The component type that needs to be on an ancestor of the wanted <see cref="GameObject"/>. Must be a subclass of <see cref="Component"/>.</typeparam>
+		/// <param name="gameObjectName">The name of the wanted <see cref="GameObject"/>. If it contains a '/' character, this method traverses the hierarchy like a path name, beginning on the game object that has a component of type <typeparamref name="T"/>.</param>
+		/// <returns>The <see cref="GameObject"/> with name <paramref name="gameObjectName"/> and an ancestor that has a <typeparamref name="T"/>. If no such <see cref="GameObject"/> is found <see langword="null"/> is returned.</returns>
+		public static GameObject FindEvenInactiveGameObject<T>(string gameObjectName = null) where T : Component
         {
             if (string.IsNullOrEmpty(gameObjectName))
             {
@@ -323,10 +323,8 @@ namespace VRTK
                 return foundComponent == null ? null : foundComponent.gameObject;
             }
 
-            Scene activeScene = SceneManager.GetActiveScene();
-            IEnumerable<GameObject> gameObjects = Resources.FindObjectsOfTypeAll<T>()
-                                                           .Select(component => component.gameObject)
-                                                           .Where(gameObject => gameObject.scene == activeScene);
+			IEnumerable<GameObject> gameObjects = Resources.FindObjectsOfTypeAll<T>()
+														   .Select(component => component.gameObject);
 
 #if UNITY_EDITOR
             gameObjects = gameObjects.Where(gameObject => !AssetDatabase.Contains(gameObject));
@@ -340,40 +338,36 @@ namespace VRTK
                               .FirstOrDefault(gameObject => gameObject != null);
         }
 
-        /// <summary>
-        /// Finds all components of a given type.
-        /// </summary>
-        /// <remarks>
-        /// This method returns components from active as well as inactive <see cref="GameObject"/>s in the scene. It doesn't return assets.
-        /// For performance reasons it is recommended to not use this function every frame. Cache the result in a member variable at startup instead.
-        /// </remarks>
-        /// <typeparam name="T">The component type to search for. Must be a subclass of <see cref="Component"/>.</typeparam>
-        /// <returns>All the found components. If no component is found an empty array is returned.</returns>
-        public static T[] FindEvenInactiveComponents<T>() where T : Component
+		/// <summary>
+		/// Finds all components of a given type.
+		/// </summary>
+		/// <remarks>
+		/// This method returns components from active as well as inactive <see cref="GameObject"/>s in the hierarchy. It doesn't return assets.
+		/// For performance reasons it is recommended to not use this function every frame. Cache the result in a member variable at startup instead.
+		/// </remarks>
+		/// <typeparam name="T">The component type to search for. Must be a subclass of <see cref="Component"/>.</typeparam>
+		/// <returns>All the found components. If no component is found an empty array is returned.</returns>
+		public static T[] FindEvenInactiveComponents<T>() where T : Component
         {
-            Scene activeScene = SceneManager.GetActiveScene();
             return Resources.FindObjectsOfTypeAll<T>()
-                            .Where(@object => @object.gameObject.scene == activeScene)
 #if UNITY_EDITOR
                             .Where(@object => !AssetDatabase.Contains(@object))
 #endif
                             .ToArray();
         }
 
-        /// <summary>
-        /// Finds the first component of a given type.
-        /// </summary>
-        /// <remarks>
-        /// This method returns components from active as well as inactive <see cref="GameObject"/>s in the scene. It doesn't return assets.
-        /// For performance reasons it is recommended to not use this function every frame. Cache the result in a member variable at startup instead.
-        /// </remarks>
-        /// <typeparam name="T">The component type to search for. Must be a subclass of <see cref="Component"/>.</typeparam>
-        /// <returns>The found component. If no component is found <see langword="null"/> is returned.</returns>
-        public static T FindEvenInactiveComponent<T>() where T : Component
+		/// <summary>
+		/// Finds the first component of a given type.
+		/// </summary>
+		/// <remarks>
+		/// This method returns components from active as well as inactive <see cref="GameObject"/>s in the hierarchy. It doesn't return assets.
+		/// For performance reasons it is recommended to not use this function every frame. Cache the result in a member variable at startup instead.
+		/// </remarks>
+		/// <typeparam name="T">The component type to search for. Must be a subclass of <see cref="Component"/>.</typeparam>
+		/// <returns>The found component. If no component is found <see langword="null"/> is returned.</returns>
+		public static T FindEvenInactiveComponent<T>() where T : Component
         {
-            Scene activeScene = SceneManager.GetActiveScene();
             return Resources.FindObjectsOfTypeAll<T>()
-                            .Where(@object => @object.gameObject.scene == activeScene)
 #if UNITY_EDITOR
                             .FirstOrDefault(@object => !AssetDatabase.Contains(@object));
 #else
@@ -409,7 +403,7 @@ namespace VRTK
         {
 #if UNITY_5_6_OR_NEWER
             float gpuTimeLastFrame;
-            if (VRStats.TryGetGPUTimeLastFrame(out gpuTimeLastFrame))
+            if (UnityEngine.XR.XRStats.TryGetGPUTimeLastFrame(out gpuTimeLastFrame))
             {
                 return gpuTimeLastFrame;
             }
@@ -480,7 +474,7 @@ namespace VRTK
         }
 
 #if UNITY_EDITOR
-        public static BuildTargetGroup[] GetValidBuildTargetGroups()
+		public static BuildTargetGroup[] GetValidBuildTargetGroups()
         {
             return Enum.GetValues(typeof(BuildTargetGroup)).Cast<BuildTargetGroup>().Where(group =>
             {

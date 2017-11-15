@@ -200,6 +200,7 @@ namespace VRTK
         protected virtual void DetectJointLimitsSetup()
         {
             SoftJointLimit buttonJointLimits = new SoftJointLimit();
+            
             buttonJointLimits.limit = activationDistance * 0.501f; // set limit to half (since it applies to both directions) and a tiny bit larger since otherwise activation distance might be missed
             buttonJoint.linearLimit = buttonJointLimits;
 
@@ -331,7 +332,7 @@ namespace VRTK
         protected virtual void FixedUpdate()
         {
             // update reference position if no force is acting on the button to support scenarios where the button is moved at runtime with a connected body
-            if (forceCount == 0 && buttonJoint.connectedBody != null)
+            if (forceCount == 0 && buttonJoint != null && buttonJoint.connectedBody != null)
             {
                 restingPosition = transform.position;
             }
@@ -367,6 +368,7 @@ namespace VRTK
             Physics.Raycast(bounds.center, Vector3.up, out hitUp, bounds.extents.y * MAX_AUTODETECT_ACTIVATION_LENGTH, Physics.DefaultRaycastLayers, QueryTriggerInteraction.UseGlobal);
             Physics.Raycast(bounds.center, Vector3.down, out hitDown, bounds.extents.y * MAX_AUTODETECT_ACTIVATION_LENGTH, Physics.DefaultRaycastLayers, QueryTriggerInteraction.UseGlobal);
 
+            
             // shortest valid ray wins
             float lengthX = (hitRight.collider != null) ? hitRight.distance : float.MaxValue;
             float lengthY = (hitDown.collider != null) ? hitDown.distance : float.MaxValue;
@@ -497,7 +499,6 @@ namespace VRTK
                     buttonDirection *= (direction == ButtonDirection.z) ? -1 : 1;
                     break;
             }
-
             // subtract width of button
             return (buttonDirection * (extents + activationDistance));
         }

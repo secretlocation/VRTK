@@ -87,6 +87,8 @@ namespace VRTK
         public bool holdButtonToGrab = true;
         [Tooltip("If this is checked then the object will stay grabbed to the controller when a teleport occurs. If it is unchecked then the object will be released when a teleport occurs.")]
         public bool stayGrabbedOnTeleport = true;
+		[Tooltip("If this is check then the object will revert to it's previous kinematic state after a grab.")]
+		public bool cacheKinematicsBeforeGrab = true;
         [Tooltip("Determines in what situation the object can be dropped by the controller grab button.")]
         public ValidDropTypes validDrop = ValidDropTypes.DropAnywhere;
         [Tooltip("If this is set to `Undefined` then the global grab alias button will grab the object, setting it to any other button will ensure the override button is used to grab this specific interactable object.")]
@@ -504,7 +506,7 @@ namespace VRTK
                 if (toggle && !IsGrabbed())
                 {
                     objectHighlighter.Highlight(touchHighlightColor);
-                }
+				}
                 else
                 {
                     objectHighlighter.Unhighlight();
@@ -572,11 +574,11 @@ namespace VRTK
             }
         }
 
-        /// <summary>
-        /// The GetTouchingObjects method is used to return the collecetion of valid game objects that are currently touching this object.
-        /// </summary>
-        /// <returns>A list of game object of that are currently touching the current object.</returns>
-        public virtual List<GameObject> GetTouchingObjects()
+		/// <summary>
+		/// The GetTouchingObjects method is used to return the collecetion of valid game objects that are currently touching this object.
+		/// </summary>
+		/// <returns>A list of game object of that are currently touching the current object.</returns>
+		public virtual List<GameObject> GetTouchingObjects()
         {
             return touchingObjects;
         }
@@ -1017,6 +1019,7 @@ namespace VRTK
             ForceReleaseGrab();
             RemoveTrackPoint();
             grabbingObjects.Add(currentGrabbingObject);
+
             SetTrackPoint(currentGrabbingObject);
             if (!IsSwappable())
             {

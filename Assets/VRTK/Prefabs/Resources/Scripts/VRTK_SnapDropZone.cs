@@ -865,7 +865,7 @@ namespace VRTK
             {
                 Component component = components[i];
                 bool valid = false;
-
+				
                 //Loop through each valid component and check to see if this component is valid
                 for (int j = 0; j < validComponents.Length; j++)
                 {

@@ -88,8 +88,8 @@ namespace VRTK
         protected Vector2 storedAxis;
         protected bool currentlyFalling = false;
         protected bool modifierActive = false;
-        protected float controlledGameObjectPreviousY = 0f;
-        protected float controlledGameObjectPreviousYOffset = 0.01f;
+        protected float controlledGameObjectPreviousUp = 0f;
+        protected float controlledGameObjectPreviousUpOffset = 0.01f;
 
         public virtual void OnXAxisChanged(ObjectControlEventArgs e)
         {
@@ -127,11 +127,12 @@ namespace VRTK
                 VRTK_Logger.Error(VRTK_Logger.GetCommonMessage(VRTK_Logger.CommonMessageKeys.REQUIRED_COMPONENT_MISSING_NOT_INJECTED, "VRTK_ObjectControl", "VRTK_ControllerEvents", "controller", "the same"));
                 return;
             }
-            SetControlledObject();
-            bodyPhysics = (!controlOverrideObject ? FindObjectOfType<VRTK_BodyPhysics>() : null);
 
+			SetControlledObject();
+            bodyPhysics = (!controlOverrideObject ? FindObjectOfType<VRTK_BodyPhysics>() : null);
             directionDevice = GetDirectionDevice();
-            SetListeners(true);
+
+			SetListeners(true);
             otherObjectControl = GetOtherControl();
         }
 
@@ -178,7 +179,7 @@ namespace VRTK
         {
             setControlOverrideObject = controlOverrideObject;
             controlledGameObject = (controlOverrideObject ? controlOverrideObject : VRTK_DeviceFinder.PlayAreaTransform().gameObject);
-            controlledGameObjectPreviousY = controlledGameObject.transform.position.y;
+			controlledGameObjectPreviousUp = Vector3.Dot(controlledGameObject.transform.position, VRTK_Orientation.Up);
         }
 
         protected virtual void CheckFalling()
@@ -206,8 +207,9 @@ namespace VRTK
 
         protected virtual bool ObjectHeightChange()
         {
-            bool heightChanged = ((controlledGameObjectPreviousY - controlledGameObjectPreviousYOffset) > controlledGameObject.transform.position.y);
-            controlledGameObjectPreviousY = controlledGameObject.transform.position.y;
+			float controlledGameObjectHeight = Vector3.Dot(controlledGameObject.transform.position, VRTK_Orientation.Up);
+			bool heightChanged = ((controlledGameObjectPreviousUp - controlledGameObjectPreviousUpOffset) > controlledGameObjectHeight);
+            controlledGameObjectPreviousUp = controlledGameObjectHeight;
             return heightChanged;
         }
 

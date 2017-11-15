@@ -439,6 +439,13 @@ namespace VRTK
             }
 
             influencingGrabbedObject = false;
+
+			// if we aren't caching kinematics, set false before saving state
+			if (!currentGrabbedObject.cacheKinematicsBeforeGrab)
+			{
+				currentGrabbedObject.isKinematic = false;
+			}
+
             currentGrabbedObject.SaveCurrentState();
             currentGrabbedObject.Grabbed(this);
             currentGrabbedObject.ZeroVelocity();

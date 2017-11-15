@@ -43,12 +43,14 @@ namespace VRTK
             ModifierButtonActive();
             if (OutsideDeadzone(currentAxis.x, axisDeadzone.x) || currentAxis.x == 0f)
             {
-                OnXAxisChanged(SetEventArguements(directionDevice.right, currentAxis.x, axisDeadzone.x));
+				// Vector3 axisDirection = Vector3.ProjectOnPlane(directionDevice.right, VRTK_Orientation.Up).normalized;
+				OnXAxisChanged(SetEventArguements(directionDevice.right, currentAxis.x, axisDeadzone.x));
             }
 
             if (OutsideDeadzone(currentAxis.y, axisDeadzone.y) || currentAxis.y == 0f)
             {
-                OnYAxisChanged(SetEventArguements(directionDevice.forward, currentAxis.y, axisDeadzone.y));
+				// Vector3 axisDirection = Vector3.ProjectOnPlane(directionDevice.forward, VRTK_Orientation.Up).normalized;
+				OnYAxisChanged(SetEventArguements(directionDevice.forward, currentAxis.y, axisDeadzone.y));
             }
         }
 
